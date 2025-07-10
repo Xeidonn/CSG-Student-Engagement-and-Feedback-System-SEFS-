@@ -1,20 +1,29 @@
 document.getElementById('feedbackForm').addEventListener('submit', function(e) {
-    e.preventDefault(); // Prevent form from refreshing the page
+    e.preventDefault();
 
-    // Get the values from the form
     const title = document.getElementById('title').value;
     const description = document.getElementById('description').value;
     const category = document.getElementById('category').value;
+    const time = new Date().toLocaleString();
 
-    // Create a new list item for the feedback
-    const feedbackItem = document.createElement('li');
-    feedbackItem.innerHTML = `<strong>${title}</strong> (${category})<br>${description}<br><span>Just now</span>`;
+    const feedbackItem = { title, description, category, time };
 
-    // Append the new feedback to the list
-    document.getElementById('feedbackDisplay').appendChild(feedbackItem);
+    const feedbackItems = JSON.parse(localStorage.getItem('feedbackItems')) || [];
+    feedbackItems.push(feedbackItem);
+    localStorage.setItem('feedbackItems', JSON.stringify(feedbackItems));
 
-    // Reset the form fields
-    document.getElementById('title').value = '';
-    document.getElementById('description').value = '';
-    document.getElementById('category').value = 'general';
+    // Create Reddit-style card
+    const li = document.createElement('li');
+    li.classList.add('reddit-post');
+    li.innerHTML = `
+        <div class="vote-column">⬆️<br>⬇️</div>
+        <div class="post-content">
+            <div class="post-title">${title}</div>
+            <div class="post-meta">Category: ${category} • Posted just now</div>
+            <div class="post-description">${description}</div>
+        </div>
+    `;
+    document.getElementById('feedbackDisplay').appendChild(li);
+
+    document.getElementById('feedbackForm').reset();
 });

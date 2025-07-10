@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Login/Signup Page</title>
+  <link rel="stylesheet" href="auth.css" />
+</head>
+<body>
+  <div class="container">
+    <div class="card">
+      <div class="card-header">
+        <h2 id="form-title">Sign In</h2>
+      </div>
+      <div class="card-content">
+        <form>
+          <div class="form-group email-field hidden">
+            <input type="email" placeholder="Email" />
+          </div>
+
+          <div class="form-group id-field hidden">
+            <input type="text" placeholder="ID Number" />
+          </div>
+          
+          <div class="form-group">
+            <input type="text" placeholder="Username" />
+          </div>
+
+          <div class="form-group">
+            <input type="password" placeholder="Password" />
+          </div>
+
+          <div class="form-group confirm-password-field hidden">
+            <input type="password" placeholder="Confirm Password" />
+          </div>
+
+          <div class="forgot-password">
+            <a href="#" id="forgot-link">Forgot Username / Password?</a>
+          </div>
+
+          <button type="submit" class="auth-button" id="auth-button">SIGN IN</button>
+
+          <p class="toggle-text">
+            <span id="toggle-msg">Don't have an account?</span>
+            <a href="#" class="toggle-link" id="toggle-link">SIGN UP NOW</a>
+          </p>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <script src="auth.js"></script>
+</body>
+</html>

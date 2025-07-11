@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Home - Reddit-style Posts</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <!-- Header Section -->
+    <header class="header">
+        <div class="header-left">
+            <!-- Logo (Reddit-like logo) -->
+            <div class="logo">
+                <span>CSG Student Engagement and Feedback System</span>
+            </div>
+        </div>
+
+        <div class="header-center">
+            <!-- Search Bar -->
+            <div class="search-bar">
+                <input type="text" placeholder="Search">
+            </div>
+        </div>
+
+        <div class="header-right">
+            <!-- Notifications and Create Button -->
+            <div class="notification-icons">
+                <button class="notifications">
+                    <i class="fa fa-bell"></i> <!-- Optional, use an icon library -->
+                </button>
+                <button class="create">
+                    <i class="fa fa-plus"></i> <!-- Optional, use an icon library -->
+                    <span>Create</span>
+                </button>
+            </div>
+            <!-- User Profile Icon -->
+            <div class="user-profile">
+                <img src="user-avatar.png" alt="User Profile" />
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Container -->
+    <div class="main-container">
+
+        <!-- Content Section (Feed and Posts) -->
+        <div class="content">
+            <section id="feedbackList">
+                <ul id="feedbackDisplay"></ul>
+            </section>
+        </div>
+    </div>
+
+    <!-- Script to Handle Dynamic Content -->
+    <script src="script.js"></script>
+</body>
+</html>

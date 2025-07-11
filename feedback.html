@@ -8,36 +8,45 @@
 </head>
 <body>
     <div class="container">
-        <h1>Submit Your Feedback</h1>
+        <header>
+            <h1>Submit Your Feedback</h1>
+        </header>
 
-        <form id="feedbackForm">
-            <div class="form-group">
-                <label for="title">Title</label>
-                <input type="text" id="title" name="title" placeholder="Enter the title" required>
-            </div>
+        <section>
+            <form id="feedbackForm">
+                <div class="form-group">
+                    <label for="title">Title</label>
+                    <input type="text" id="title" name="title" placeholder="Enter the title" required>
+                </div>
 
-            <div class="form-group">
-                <label for="description">Description</label>
-                <textarea id="description" name="description" placeholder="Describe your feedback" required></textarea>
-            </div>
+                <div class="form-group">
+                    <label for="description">Description</label>
+                    <textarea id="description" name="description" placeholder="Describe your feedback" required></textarea>
+                </div>
 
-            <div class="form-group">
-                <label for="category">Category</label>
-                <select id="category" name="category" required>
-                    <option value="general">General</option>
-                    <option value="events">Events</option>
-                    <option value="academics">Academics</option>
-                    <option value="services">Services</option>
-                </select>
-            </div>
+                <div class="form-group">
+                    <label for="category">Category</label>
+                    <select id="category" name="category" required>
+                        <option value="general">General</option>
+                        <option value="events">Events</option>
+                        <option value="academics">Academics</option>
+                        <option value="services">Services</option>
+                    </select>
+                </div>
 
-            <button type="submit" id="submitBtn">Submit Feedback</button>
-        </form>
+                <div class="form-group">
+                    <label for="imageUrl">Image URL (Optional)</label>
+                    <input type="text" id="imageUrl" name="imageUrl" placeholder="Paste image URL here">
+                </div>
 
-        <div id="feedbackList">
+                <button type="submit" id="submitBtn">Submit Feedback</button>
+            </form>
+        </section>
+
+        <section id="feedbackList">
             <h2>Your Feedback</h2>
             <ul id="feedbackDisplay"></ul>
-        </div>
+        </section>
     </div>
 
     <script src="script.js"></script>

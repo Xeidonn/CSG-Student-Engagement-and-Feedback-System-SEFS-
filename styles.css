@@ -1,88 +1,150 @@
+/* Global reset */
 * {
     margin: 0;
     padding: 0;
     box-sizing: border-box;
 }
 
-body {
-    font-family: Arial, sans-serif;
-    background-color: #f4f7f6;
-    padding: 20px;
+/* Header Styles */
+.header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background-color: #1a1a1b;
+    padding: 10px 20px;
+    color: white;
 }
 
-.container {
-    max-width: 800px;
-    margin: 0 auto;
-    padding: 20px;
-    background-color: #fff;
-    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
-    border-radius: 8px;
+/* Left Section (Logo) */
+.header-left {
+    display: flex;
+    align-items: center;
 }
 
-h1 {
-    text-align: center;
-    margin-bottom: 20px;
+.logo {
+    display: flex;
+    align-items: center;
+    gap: 10px;
 }
 
-.form-group {
-    margin-bottom: 15px;
+.logo img {
+    width: 30px;
+    height: 30px;
 }
 
-label {
+.logo span {
+    font-size: 24px;
     font-weight: bold;
 }
 
-input, textarea, select {
-    width: 100%;
-    padding: 10px;
-    margin-top: 5px;
-    border: 1px solid #ddd;
-    border-radius: 4px;
+/* Center Section (Search Bar) */
+.header-center {
+    flex: 1;
+    display: flex;
+    justify-content: center;
 }
 
-textarea {
-    resize: vertical;
-    height: 150px;
+.search-bar input {
+    width: 60%;
+    padding: 8px 16px;
+    border: none;
+    border-radius: 20px;
+    font-size: 16px;
+    outline: none;
+}
+
+/* Right Section (Notifications, Create, Profile) */
+.header-right {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+}
+
+.notification-icons {
+    display: flex;
+    gap: 15px;
 }
 
 button {
-    width: 100%;
-    padding: 10px;
-    background-color: #4CAF50;
-    color: white;
+    background: none;
     border: none;
-    border-radius: 4px;
+    color: white;
     cursor: pointer;
-    font-size: 16px;
 }
 
 button:hover {
-    background-color: #45a049;
+    color: #bbb;
 }
 
-#feedbackList {
-    margin-top: 30px;
+.notifications {
+    font-size: 20px;
 }
 
-#feedbackList ul {
+.create {
+    display: flex;
+    align-items: center;
+    font-size: 16px;
+}
+
+.create span {
+    margin-left: 5px;
+}
+
+.user-profile img {
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+}
+
+/* Sidebar Styles */
+.sidebar {
+    width: 200px;
+    background-color: #1a1a1b;
+    color: white;
+    height: 100vh;
+    padding-top: 20px;
+}
+
+.sidebar-header {
+    text-align: center;
+    font-size: 18px;
+    margin-bottom: 10px;
+    font-weight: bold;
+}
+
+.sidebar-links {
     list-style-type: none;
 }
 
-#feedbackList ul li {
+.sidebar-links li {
     padding: 10px;
-    background-color: #f9f9f9;
-    border-radius: 5px;
-    margin-bottom: 10px;
-    box-shadow: 0 0 5px rgba(0, 0, 0, 0.1);
+    text-align: center;
+    font-size: 16px;
 }
 
-#feedbackList ul li span {
-    display: block;
-    font-size: 14px;
-    color: #888;
+.sidebar-links li a {
+    color: white;
+    text-decoration: none;
 }
 
-/* Reddit-style container */
+.sidebar-links li a:hover {
+    background-color: #333;
+    border-radius: 4px;
+}
+
+/* Main Content (Feed and Posts) */
+.main-container {
+    display: flex;
+}
+
+.content {
+    flex: 1;
+    padding: 20px;
+    background-color: #f4f7f6;
+    min-height: 100vh;
+}
+
+/* Reddit-style post */
 .reddit-post {
     background-color: #fff;
     border: 1px solid #ccc;
@@ -92,10 +154,9 @@ button:hover {
     display: flex;
     flex-direction: row;
     gap: 15px;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 }
 
-/* Optional upvote column (Reddit-style) */
+/* Vote column */
 .vote-column {
     display: flex;
     flex-direction: column;
@@ -110,88 +171,29 @@ button:hover {
     flex: 1;
 }
 
+/* Post title styling */
 .post-title {
     font-size: 18px;
     font-weight: bold;
     color: #333;
 }
 
+/* Post meta (category, time) */
 .post-meta {
     font-size: 12px;
     color: #777;
     margin-bottom: 8px;
 }
 
+/* Post description */
 .post-description {
     font-size: 14px;
     color: #444;
 }
 
-body {
-    font-family: 'Roboto', sans-serif;
-    background-color: #f6f7f8;
-}
-
-.container {
-    max-width: 800px;
-    margin: 40px auto;
-    padding: 20px;
-}
-
-h1 {
-    text-align: center;
-    margin-bottom: 30px;
-}
-
-.feedback-list {
-    list-style: none;
-    padding-left: 0;
-}
-
-.no-feedback {
-    text-align: center;
-    color: #777;
-}
-
-/* Reddit-style feedback post */
-.reddit-post {
-    background-color: #fff;
-    border: 1px solid #ccc;
-    border-radius: 6px;
-    padding: 15px;
-    margin-bottom: 15px;
-    display: flex;
-    flex-direction: row;
-    gap: 15px;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-}
-
-.vote-column {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    width: 40px;
-    font-size: 20px;
-    color: #888;
-}
-
-.post-content {
-    flex: 1;
-}
-
-.post-title {
-    font-size: 18px;
-    font-weight: bold;
-    color: #333;
-}
-
-.post-meta {
-    font-size: 12px;
-    color: #777;
-    margin-bottom: 8px;
-}
-
-.post-description {
-    font-size: 14px;
-    color: #444;
+/* Media/Image support for posts */
+.post-image {
+    margin-top: 10px;
+    max-width: 100%;
+    height: auto;
 }

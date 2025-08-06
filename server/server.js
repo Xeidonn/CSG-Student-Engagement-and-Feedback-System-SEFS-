@@ -138,29 +138,88 @@ app.get('/comments/:postId', async (req, res) => {
 });
 
 app.post('/vote', async (req, res) => {
-  if (!currentSession) return res.status(403).send('Not logged in');
+    if (!currentSession) return res.status(403).send('Not logged in');
 
-  const { postId, voteType } = req.body;
-  const userId = currentSession.id || currentSession.name;
+    const { postId, voteType } = req.body;
+    const userId = currentSession.id || currentSession.name;
 
-  const post = await UserPost.findById(postId);
-  if (!post) return res.status(404).send('Post not found');
-  if (post.authorID === userId) return res.status(403).send('You cannot vote on your own post');
+    const post = await UserPost.findById(postId);
+    if (!post) return res.status(404).send('Post not found');
+    if (post.authorID === userId) return res.status(403).send('You cannot vote on your own post');
 
-  // Remove user from both vote arrays to toggle
-  post.upvotes = post.upvotes.filter(id => id !== userId);
-  post.downvotes = post.downvotes.filter(id => id !== userId);
+    // Remove user from both vote arrays to toggle
+    post.upvotes = post.upvotes.filter(id => id !== userId);
+    post.downvotes = post.downvotes.filter(id => id !== userId);
 
-  // Add user to the correct vote array
-  if (voteType === 'upvote') {
-    post.upvotes.push(userId);
-  } else if (voteType === 'downvote') {
-    post.downvotes.push(userId);
-  }
+    // Add user to the correct vote array
+    if (voteType === 'upvote') {
+      post.upvotes.push(userId);
+    } else if (voteType === 'downvote') {
+      post.downvotes.push(userId);
+    }
 
-  await post.save();
-  res.status(200).send('Vote recorded');
+    await post.save();
+    res.status(200).send('Vote recorded');
 });
+
+// V2 - Route to show the Edit Post form
+app.get('/edit-post/:id', async (req, res) => {
+  const post = await UserPost.findById(req.params.id);
+  if (!post) return res.status(404).send('Post not found');
+
+  // Redirect to the static HTML page, passing the post data in the query parameters
+  res.redirect(`/edit-post.html?id=${post._id}&title=${post.title}&content=${post.content}`);
+});
+
+
+
+// V2 - Route to handle updating the post
+app.post('/update-post/:id', async (req, res) => {
+  const { title, content } = req.body;
+  const post = await UserPost.findByIdAndUpdate(req.params.id, { title, content }, { new: true });
+  
+  if (!post) return res.status(404).send('Post not found');
+  
+  // Redirect to the updated post page
+  res.redirect(`/post/${post._id}`);
+});
+
+
+
+// V2 - Route to delete a post
+app.delete('/delete-post/:id', async (req, res) => {
+  const post = await UserPost.findByIdAndDelete(req.params.id);
+  if (!post) return res.status(404).send('Post not found');
+  res.status(200).send('Post deleted');
+});
+
+// V2 - Route to display a specific post (view post) PENDING TO, TO BE MODIFIED
+app.get('/post/:id', async (req, res) => {
+  const post = await UserPost.findById(req.params.id);
+  if (!post) return res.status(404).send('Post not found');
+
+  // Render the post on an HTML page
+  res.send(`
+    <!DOCTYPE html>
+    <html lang="en">
+    <head>
+      <meta charset="UTF-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      <title>${post.title}</title>
+    </head>
+    <body>
+      <h1>${post.title}</h1>
+      <p>${post.content}</p>
+      <p><strong>By: ${post.authorName}</strong></p>
+      <hr>
+      <a href="/edit-post/${post._id}">Edit Post</a>
+    </body>
+    </html>
+  `);
+});
+
+
+
 
 
 

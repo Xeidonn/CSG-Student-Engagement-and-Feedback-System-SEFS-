@@ -1,0 +1,34 @@
+[{
+  "_id": {
+    "$oid": "6881e494587c5534222be342"
+  },
+  "title": "Sample Post",
+  "content": "This is Sample post for student1",
+  "authorID": "anonymous",
+  "authorName": "student1",
+  "upvotes": [
+    "student2"
+  ],
+  "downvotes": [],
+  "createdAt": {
+    "$date": "2025-07-24T07:45:24.049Z"
+  },
+  "__v": 14
+},
+{
+  "_id": {
+    "$oid": "6881e61a285e7e8399f50265"
+  },
+  "title": "Sample Post 2",
+  "content": "This is sample post for student 2",
+  "authorID": "anonymous",
+  "authorName": "student2",
+  "upvotes": [
+    "student1"
+  ],
+  "downvotes": [],
+  "createdAt": {
+    "$date": "2025-07-24T07:51:54.125Z"
+  },
+  "__v": 1
+}]

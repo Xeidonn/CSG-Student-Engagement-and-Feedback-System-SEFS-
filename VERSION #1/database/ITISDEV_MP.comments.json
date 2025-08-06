@@ -1,0 +1,45 @@
+[{
+  "_id": {
+    "$oid": "6881e4a2587c5534222be346"
+  },
+  "postId": {
+    "$oid": "6881e494587c5534222be342"
+  },
+  "content": "Comment from Student1",
+  "authorID": "anon",
+  "authorName": "student1",
+  "createdAt": {
+    "$date": "2025-07-24T07:45:38.477Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "6881e4c2587c5534222be353"
+  },
+  "postId": {
+    "$oid": "6881e494587c5534222be342"
+  },
+  "content": "Comment from Student2",
+  "authorID": "anon",
+  "authorName": "student2",
+  "createdAt": {
+    "$date": "2025-07-24T07:46:10.346Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "6881e637285e7e8399f50276"
+  },
+  "postId": {
+    "$oid": "6881e61a285e7e8399f50265"
+  },
+  "content": "I upvoted this post!",
+  "authorID": "anon",
+  "authorName": "student1",
+  "createdAt": {
+    "$date": "2025-07-24T07:52:23.291Z"
+  },
+  "__v": 0
+}]

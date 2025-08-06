@@ -1,0 +1,33 @@
+[{
+  "_id": {
+    "$oid": "6881e42c587c5534222be333"
+  },
+  "name": "student1",
+  "userID": "1",
+  "email": "student1@gmail.com",
+  "password": "student1",
+  "role": "student",
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "6881e447587c5534222be337"
+  },
+  "name": "student2",
+  "userID": "2",
+  "email": "student2@gmail.com",
+  "password": "student2",
+  "role": "student",
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "6881e461587c5534222be33b"
+  },
+  "name": "admin1",
+  "userID": "11",
+  "email": "admin1@gmail.com",
+  "password": "admin1",
+  "role": "admin",
+  "__v": 0
+}]

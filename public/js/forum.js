@@ -3,7 +3,10 @@ document.addEventListener('DOMContentLoaded', async () => {
   const postForm = document.getElementById('create-post');
   const authArea = document.getElementById('auth-area');
 
-  // Check session
+  // ----------------------------------------------------------------------------------------------------------------------------------------------------
+  // ------------------------------------------------------------------SESSION & AUTH LOGIC -------------------------------------------------------------
+  // ----------------------------------------------------------------------------------------------------------------------------------------------------
+
   const resSession = await fetch('/session');
   const session = await resSession.json();
 
@@ -12,81 +15,103 @@ document.addEventListener('DOMContentLoaded', async () => {
     authArea.innerHTML = `Welcome, ${session.name}! <a href="/logout">Logout</a>`;
   }
 
-  // Fetch posts
-  const resPosts = await fetch('/posts');
-  const posts = await resPosts.json();
+  // ----------------------------------------------------------------------------------------------------------------------------------------------------
+  // ------------------------------------------------------------------POST RENDERING & FILTERING -------------------------------------------------------
+  // ----------------------------------------------------------------------------------------------------------------------------------------------------
 
-  posts.forEach(post => {
-    const div = document.createElement('div');
-    div.innerHTML = `
-      <h4>${post.title}</h4>
-      <p>${post.content}</p>
-      <p>By: ${post.authorName}</p>
-      <p>
-        <button class="vote-btn" data-id="${post._id}" data-type="upvote">👍</button>
-        <button class="vote-btn" data-id="${post._id}" data-type="downvote">👎</button>
-        ${post.upvotes.length - post.downvotes.length} points | 💬 ${post.commentCount}
-      </p>
-      
-      <i class="fas fa-comments show-comments-btn" data-postid="${post._id}" style="cursor: pointer;"></i>
-      <div id="comments-${post._id}" style="display: none;"><em>Loading comments...</em></div>
-      
-      // CHANGES: Show Edit and Delete buttons if the logged-in user is the author
-      ${session.name === post.authorName ? `
-        <button class="edit-post-btn" data-postid="${post._id}">Edit Post</button>
-        <button class="delete-post-btn" data-postid="${post._id}">Delete Post</button>
-      ` : ''}
+  const renderPosts = (posts) => {
+    postsContainer.innerHTML = '';
 
-      <hr>
-    `;
-    postsContainer.appendChild(div);
+    posts.forEach(post => {
+      const div = document.createElement('div');
+      div.innerHTML = `
+        <h4>${post.title}</h4>
+        <p>${post.content}</p>
+        <p>By: ${post.authorName}</p>
+        <p>
+          <button class="vote-btn" data-id="${post._id}" data-type="upvote">👍</button>
+          <button class="vote-btn" data-id="${post._id}" data-type="downvote">👎</button>
+          ${post.upvotes.length - post.downvotes.length} points | 💬 ${post.commentCount}
+        </p>
 
-    // Fetch comments but don't display them yet
-    fetch(`/comments/${post._id}`)
-      .then(res => res.json())
-      .then(comments => {
-        const commentBox = document.getElementById(`comments-${post._id}`);
-        if (comments.length === 0) {
-          commentBox.innerHTML = "<p><em>No comments yet.</em></p>";
-        } else {
-          commentBox.innerHTML = comments.map(c => 
-            `<p><strong>${c.authorName}:</strong> ${c.content}</p>`
-          ).join('');
-        }
-      });
+        ${session.name === post.authorName ? `
+          <button class="edit-post-btn" data-postid="${post._id}">Edit</button>
+          <button class="delete-post-btn" data-postid="${post._id}">Delete</button>
+        ` : ''}
 
-    // Show comments when the comments icon is clicked
-    const showCommentsBtn = div.querySelector('.show-comments-btn');
-    showCommentsBtn.addEventListener('click', () => {
-      const commentBox = div.querySelector(`#comments-${post._id}`);
-      commentBox.style.display = commentBox.style.display === 'none' ? 'block' : 'none';
-      showCommentsBtn.classList.toggle('fa-comments');
-      showCommentsBtn.classList.toggle('fa-times');
+        <div id="comments-${post._id}"><em>Loading comments...</em></div>
+
+        ${session.loggedIn ? `
+          <form class="comment-form" data-postid="${post._id}">
+            <input type="text" name="content" placeholder="Write a comment..." required>
+            <button type="submit">Post</button>
+          </form>` : ''}
+
+        <hr>
+      `;
+      postsContainer.appendChild(div);
+
+      // Edit Post
+      const editBtn = div.querySelector('.edit-post-btn');
+      if (editBtn) {
+        editBtn.addEventListener('click', () => {
+          window.location.href = `/edit-post/${post._id}`;
+        });
+      }
+
+      // Delete Post
+      const deleteBtn = div.querySelector('.delete-post-btn');
+      if (deleteBtn) {
+        deleteBtn.addEventListener('click', async () => {
+          const confirmDelete = confirm("Are you sure you want to delete this post?");
+          if (confirmDelete) {
+            await fetch(`/delete-post/${post._id}`, { method: 'DELETE' });
+            window.location.reload();
+          }
+        });
+      }
+
+      // Load Comments
+      fetch(`/comments/${post._id}`)
+        .then(res => res.json())
+        .then(comments => {
+          const commentBox = div.querySelector(`#comments-${post._id}`);
+          if (comments.length === 0) {
+            commentBox.innerHTML = "<p><em>No comments yet.</em></p>";
+          } else {
+            commentBox.innerHTML = comments.map(c => `
+              <div class="comment" id="comment-${c._id}">
+                <p><strong>${c.authorName}:</strong> ${c.content}</p>
+                ${session.name === c.authorName ? `
+                  <button class="edit-comment-btn" data-commentid="${c._id}">Edit</button>
+                  <button class="delete-comment-btn" data-commentid="${c._id}">Delete</button>
+                ` : ''}
+              </div>
+            `).join('');
+          }
+        });
     });
+  };
 
-    // **CHANGES: Edit Post**
-    const editPostBtn = div.querySelector('.edit-post-btn');
-    if (editPostBtn) {
-      editPostBtn.addEventListener('click', () => {
-        // Redirect to an edit post page (or open an inline form for editing)
-        window.location.href = `/edit-post/${post._id}`;
-      });
-    }
+  const loadPosts = async (type = 'recent') => {
+    let url = '/posts';
+    if (type === 'recent') url = '/posts/recent';
+    if (type === 'liked') url = '/posts/liked';
 
-    // **CHANGES: Delete Post**
-    const deletePostBtn = div.querySelector('.delete-post-btn');
-    if (deletePostBtn) {
-      deletePostBtn.addEventListener('click', async () => {
-        const confirmDelete = confirm("Are you sure you want to delete this post?");
-        if (confirmDelete) {
-          await fetch(`/delete-post/${post._id}`, { method: 'DELETE' });
-          window.location.reload(); // Refresh the page to reflect the deletion
-        }
-      });
-    }
-  });
+    const res = await fetch(url);
+    const posts = await res.json();
+    renderPosts(posts);
+  };
 
-  // Post submission
+  loadPosts('recent');
+
+  document.getElementById('filterRecent')?.addEventListener('click', () => loadPosts('recent'));
+  document.getElementById('filterLiked')?.addEventListener('click', () => loadPosts('liked'));
+
+  // ----------------------------------------------------------------------------------------------------------------------------------------------------
+  // ------------------------------------------------------------------CREATE POST LOGIC ----------------------------------------------------------------
+  // ----------------------------------------------------------------------------------------------------------------------------------------------------
+
   document.getElementById('postForm')?.addEventListener('submit', async (e) => {
     e.preventDefault();
     const title = document.getElementById('title').value;
@@ -98,10 +123,14 @@ document.addEventListener('DOMContentLoaded', async () => {
       body: new URLSearchParams({ title, content })
     });
 
-    window.location.reload(); // refresh to show new post
+    window.location.reload();
   });
 
-  // Comment submission
+  // ----------------------------------------------------------------------------------------------------------------------------------------------------
+  // ------------------------------------------------------------------COMMENTS LOGIC --------------------------------------------------------------------
+  // ----------------------------------------------------------------------------------------------------------------------------------------------------
+
+  // Create Comment
   document.addEventListener('submit', async (e) => {
     if (e.target.classList.contains('comment-form')) {
       e.preventDefault();
@@ -119,7 +148,38 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
   });
 
-  // Voting
+  // Edit Comment
+  document.addEventListener('click', async (e) => {
+    if (e.target.classList.contains('edit-comment-btn')) {
+      const commentId = e.target.getAttribute('data-commentid');
+      const newContent = prompt('Edit your comment:');
+      if (newContent) {
+        await fetch(`/update-comment/${commentId}`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+          body: new URLSearchParams({ content: newContent })
+        });
+        window.location.reload();
+      }
+    }
+  });
+
+  // Delete Comment
+  document.addEventListener('click', async (e) => {
+    if (e.target.classList.contains('delete-comment-btn')) {
+      const commentId = e.target.getAttribute('data-commentid');
+      const confirmDelete = confirm("Are you sure you want to delete this comment?");
+      if (confirmDelete) {
+        await fetch(`/delete-comment/${commentId}`, { method: 'DELETE' });
+        window.location.reload();
+      }
+    }
+  });
+
+  // ----------------------------------------------------------------------------------------------------------------------------------------------------
+  // ------------------------------------------------------------------VOTE LOGIC ------------------------------------------------------------------------
+  // ----------------------------------------------------------------------------------------------------------------------------------------------------
+
   document.addEventListener('click', async (e) => {
     if (e.target.classList.contains('vote-btn')) {
       const postId = e.target.getAttribute('data-id');

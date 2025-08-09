@@ -399,9 +399,6 @@ function renderComment($comment, $post_id, $level = 0) {
                             <?= htmlspecialchars($post['category_name']) ?>
                         </span>
                         <?php endif; ?>
-                        <span class="status-badge status-<?= $post['status'] ?>">
-                            <?= ucfirst($post['status']) ?>
-                        </span>
                     </div>
                     </div>
                     <div class="post-content">

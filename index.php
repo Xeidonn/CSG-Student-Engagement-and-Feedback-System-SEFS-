@@ -354,7 +354,8 @@ function loadPosts($conn, $section, $search, $category_filter, $page, $posts_per
   LEFT JOIN users u ON fp.user_id = u.user_id
   LEFT JOIN categories c ON fp.category_id = c.category_id
   $where_clause
-  ORDER BY fp.created_at DESC
+  ORDER BY (fp.upvotes * 2 + fp.comment_count) DESC,
+         fp.created_at DESC
   LIMIT ? OFFSET ?";
   
   $params[] = $posts_per_page;

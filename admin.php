@@ -91,9 +91,7 @@ function timeAgo($datetime) {
 <body>
     <!-- Navigation -->
     <nav class="navbar navbar-expand-lg navbar-dark bg-primary sticky-top">
-        <div class="container">
-            <a class="navbar-brand fw-bold" href="index.php"><i class="fas fa-comments me-2"></i>SEFS</a>
-            
+        <div class="container">            
            <div class="navbar-nav ms-auto">
     <div class="dropdown">
         <a class="nav-link dropdown-toggle text-white" href="#" role="button" data-bs-toggle="dropdown">

@@ -59,48 +59,60 @@ try {
 
 // Functions
 function handleLogin($conn) {
-  $email = $_POST['email'] ?? '';
-  $password = $_POST['password'] ?? '';
-  $remember = isset($_POST['remember']);
-  
-  if (empty($email) || empty($password)) {
-      $_SESSION['error'] = 'Email and password are required';
-      return;
-  }
-  
-  try {
-      $stmt = mysqli_prepare($conn, "SELECT user_id, student_id, name, email, password_hash, role FROM users WHERE email = ? AND is_active = 1");
-      mysqli_stmt_bind_param($stmt, "s", $email);
-      mysqli_stmt_execute($stmt);
-      $result = mysqli_stmt_get_result($stmt);
-      $user = mysqli_fetch_assoc($result);
-      
-      if ($user && password_verify($password, $user['password_hash'])) {
-          $_SESSION['user_id'] = $user['user_id'];
-          $_SESSION['student_id'] = $user['student_id'];
-          $_SESSION['name'] = $user['name'];
-          $_SESSION['email'] = $user['email'];
-          $_SESSION['role'] = $user['role'];
-          
-          if ($remember) {
-              $token = bin2hex(random_bytes(32));
-              $updateStmt = mysqli_prepare($conn, "UPDATE users SET remember_token = ? WHERE user_id = ?");
-              mysqli_stmt_bind_param($updateStmt, "si", $token, $user['user_id']);
-              mysqli_stmt_execute($updateStmt);
-              setcookie('remember_token', $token, time() + (3 * 7 * 24 * 60 * 60), '/');
-          }
-          
-          $_SESSION['success'] = 'Login successful!';
-      } else {
-          $_SESSION['error'] = 'Invalid credentials';
-      }
-  } catch (Exception $e) {
-      $_SESSION['error'] = 'Login failed: ' . $e->getMessage();
-  }
-  
-  header('Location: index.php');
-  exit;
+    $email = $_POST['email'] ?? '';
+    $password = $_POST['password'] ?? '';
+    $remember = isset($_POST['remember']);
+
+    if (empty($email) || empty($password)) {
+        $_SESSION['error'] = 'Email and password are required';
+        return;
+    }
+
+    try {
+        $stmt = mysqli_prepare($conn, "SELECT user_id, student_id, name, email, password_hash, role 
+                                       FROM users 
+                                       WHERE email = ? AND is_active = 1");
+        mysqli_stmt_bind_param($stmt, "s", $email);
+        mysqli_stmt_execute($stmt);
+        $result = mysqli_stmt_get_result($stmt);
+        $user = mysqli_fetch_assoc($result);
+
+        if ($user && password_verify($password, $user['password_hash'])) {
+            $_SESSION['user_id']    = $user['user_id'];
+            $_SESSION['student_id'] = $user['student_id'];
+            $_SESSION['name']       = $user['name'];
+            $_SESSION['email']      = $user['email'];
+            $_SESSION['role']       = $user['role'];
+
+            if ($remember) {
+                $token = bin2hex(random_bytes(32));
+                $updateStmt = mysqli_prepare($conn, "UPDATE users SET remember_token = ? WHERE user_id = ?");
+                mysqli_stmt_bind_param($updateStmt, "si", $token, $user['user_id']);
+                mysqli_stmt_execute($updateStmt);
+                setcookie('remember_token', $token, time() + (3 * 7 * 24 * 60 * 60), '/');
+            }
+
+            $_SESSION['success'] = 'Login successful!';
+
+            //  Redirect based on role
+            if (strtolower($user['role']) === 'admin') {
+                header('Location: admin.php');
+            } else {
+                header('Location: index.php');
+            }
+            exit;
+
+        } else {
+            $_SESSION['error'] = 'Invalid credentials';
+        }
+    } catch (Exception $e) {
+        $_SESSION['error'] = 'Login failed: ' . $e->getMessage();
+    }
+
+    header('Location: index.php');
+    exit;
 }
+
 
 function handleRegister($conn) {
   $student_id = $_POST['student_id'] ?? '';

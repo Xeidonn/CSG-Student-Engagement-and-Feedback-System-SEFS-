@@ -1,9 +1,8 @@
 <?php
-// Admin Dashboard - Pure PHP Version
 require_once 'config/database.php';
 
 if (!isAdmin()) {
-    header('Location: index.php');
+    header('Location: index.php'); // or 'login.php'
     exit;
 }
 
@@ -95,28 +94,24 @@ function timeAgo($datetime) {
         <div class="container">
             <a class="navbar-brand fw-bold" href="index.php"><i class="fas fa-comments me-2"></i>SEFS</a>
             
-            <div class="navbar-nav ms-auto">
-                <a class="nav-link" href="index.php">
-                    <i class="fas fa-arrow-left me-1"></i>Back to Home
-                </a>
-                
-                <div class="dropdown">
-                    <a class="nav-link dropdown-toggle text-white" href="#" role="button" data-bs-toggle="dropdown">
-                        <i class="fas fa-user me-1"></i><?= htmlspecialchars($_SESSION['name']) ?>
-                    </a>
-                    <ul class="dropdown-menu">
-                        <li>
-                            <form method="POST" action="index.php" class="d-inline">
-                                <input type="hidden" name="action" value="logout">
-                                <button type="submit" class="dropdown-item">
-                                    <i class="fas fa-sign-out-alt me-2"></i>Logout
-                                </button>
-                            </form>
-                        </li>
-                    </ul>
-                </div>
-            </div>
-        </div>
+           <div class="navbar-nav ms-auto">
+    <div class="dropdown">
+        <a class="nav-link dropdown-toggle text-white" href="#" role="button" data-bs-toggle="dropdown">
+            <i class="fas fa-user me-1"></i><?= htmlspecialchars($_SESSION['name']) ?>
+        </a>
+        <ul class="dropdown-menu">
+            <li>
+                <form method="POST" action="index.php" class="d-inline">
+                    <input type="hidden" name="action" value="logout">
+                    <button type="submit" class="dropdown-item">
+                        <i class="fas fa-sign-out-alt me-2"></i>Logout
+                    </button>
+                </form>
+            </li>
+        </ul>
+    </div>
+</div>
+
     </nav>
 
     <!-- Main Content -->

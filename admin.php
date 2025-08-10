@@ -89,11 +89,10 @@ function timeAgo($datetime) {
     <link href="css/style.css" rel="stylesheet">
 </head>
 <body>
-    <!-- Navigation -->
     <nav class="navbar navbar-expand-lg navbar-dark bg-primary sticky-top">
         <div class="container">
-                <a class="navbar-brand fw-bold"><i class="fas fa-comments me-2"></i>SEFS</a>
-        <div class="navbar-nav ms-auto">
+            <a class="navbar-brand fw-bold"><i class="fas fa-comments me-2"></i>SEFS</a>
+           <div class="navbar-nav ms-auto">
     <div class="dropdown">
         <a class="nav-link dropdown-toggle text-white" href="#" role="button" data-bs-toggle="dropdown">
             <i class="fas fa-user me-1"></i><?= htmlspecialchars($_SESSION['name']) ?>
@@ -112,17 +111,28 @@ function timeAgo($datetime) {
 </div>
 
     </nav>
-
-    <!-- Main Content -->
     <div class="container mt-4">
         <div class="row">
             <div class="col-12">
-                <h2><i class="fas fa-chart-bar me-2"></i>Analytics Dashboard</h2>
-                <p class="text-muted">Overview of system activity and engagement metrics.</p>
-            </div>
+                <div class="d-flex justify-content-between align-items-center mb-3">
+  <h2 class="mb-0"><i class="fas fa-chart-bar me-2"></i>Analytics Dashboard</h2>
+
+  <div class="d-flex gap-2">
+    <!-- View Responses -->
+    <a href="survey_responses.php" class="btn btn-outline-secondary">
+      <i class="fas fa-poll me-1"></i> View Responses
+    </a>
+    <!-- Create Survey -->
+    <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#createSurveyModal">
+      <i class="fas fa-plus me-1"></i> Create Survey
+    </button>
+  </div>
+</div>
+
+<p class="text-muted">Overview of system activity and engagement metrics.</p>
+
         </div>
         
-        <!-- Stats Cards -->
         <div class="row mb-4">
             <div class="col-md-2">
                 <div class="stats-card">
@@ -156,7 +166,6 @@ function timeAgo($datetime) {
             </div>
         </div>
         
-        <!-- Charts and Data -->
         <div class="row">
             <div class="col-md-6">
                 <div class="card">
@@ -215,6 +224,160 @@ function timeAgo($datetime) {
             </div>
         </div>
     </div>
+
+<div class="modal fade" id="createSurveyModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <form id="surveyForm">
+        <div class="modal-header">
+          <h5 class="modal-title">Create Survey</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+
+        <div class="modal-body">
+          <div class="row g-3">
+            <div class="col-md-8">
+              <label class="form-label">Title <span class="text-danger">*</span></label>
+              <input type="text" class="form-control" name="title" required>
+            </div>
+            <div class="col-md-4">
+              <label class="form-label">End Date</label>
+              <input type="date" class="form-control" name="end_date">
+            </div>
+            <div class="col-12">
+              <label class="form-label">Description</label>
+              <textarea class="form-control" name="description" rows="2"></textarea>
+            </div>
+            <div class="col-12">
+              <div class="form-check">
+                <input class="form-check-input" type="checkbox" name="is_anonymous" id="isAnon" checked>
+                <label class="form-check-label" for="isAnon">Anonymous responses</label>
+              </div>
+            </div>
+          </div>
+
+          <hr class="my-3">
+
+          <div class="d-flex justify-content-between align-items-center mb-2">
+            <h6 class="mb-0">Questions <span class="text-danger">*</span></h6>
+            <button type="button" class="btn btn-outline-secondary btn-sm" id="addQuestionBtn">
+              <i class="fas fa-plus"></i> Add Question
+            </button>
+          </div>
+
+          <div id="questionsWrap" class="vstack gap-3"></div>
+        </div>
+
+        <div class="modal-footer">
+          <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancel</button>
+          <button type="submit" class="btn btn-primary">Create</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+<script>
+(function () {
+  const questionsWrap = document.getElementById('questionsWrap');
+  const addBtn = document.getElementById('addQuestionBtn');
+  const form = document.getElementById('surveyForm');
+
+  function questionBlock() {
+    const el = document.createElement('div');
+    el.className = 'card p-3';
+    el.innerHTML = `
+      <div class="row g-2 align-items-start">
+        <div class="col-md-7">
+          <label class="form-label">Question text</label>
+          <input type="text" class="form-control q-text" required>
+        </div>
+        <div class="col-md-3">
+          <label class="form-label">Type</label>
+          <select class="form-select q-type">
+            <option value="open_ended">Text</option>
+            <option value="rating">Rating (1-5)</option>
+            <option value="multiple_choice">Multiple choice</option>
+          </select>
+        </div>
+        <div class="col-md-2">
+          <label class="form-label d-block">Required</label>
+          <input type="checkbox" class="form-check-input q-required">
+        </div>
+        <div class="col-12 q-options d-none">
+          <label class="form-label">Options (one per line)</label>
+          <textarea class="form-control q-opts" rows="2" placeholder="Option A&#10;Option B"></textarea>
+        </div>
+        <div class="col-12 text-end">
+          <button type="button" class="btn btn-sm btn-outline-danger remove-q">Remove</button>
+        </div>
+      </div>`;
+    const typeSel = el.querySelector('.q-type');
+    const optsBox = el.querySelector('.q-options');
+    typeSel.addEventListener('change', () => {
+      optsBox.classList.toggle('d-none', typeSel.value !== 'multiple_choice');
+    });
+    el.querySelector('.remove-q').addEventListener('click', () => el.remove());
+    return el;
+  }
+
+  addBtn.addEventListener('click', () => questionsWrap.appendChild(questionBlock()));
+  questionsWrap.appendChild(questionBlock()); // start with one
+
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+
+    const title = form.title.value.trim();
+    if (!title) { alert('Title is required'); return; }
+
+    const questions = [...questionsWrap.children].map((card) => {
+      const text = card.querySelector('.q-text').value.trim();
+      const type = card.querySelector('.q-type').value;   // <-- now matches DB enum
+      const required = card.querySelector('.q-required').checked;
+      let options;
+      if (type === 'multiple_choice') {
+        options = card.querySelector('.q-opts').value
+          .split('\n').map(s => s.trim()).filter(Boolean);
+      }
+      return { text, type, required, options };
+    }).filter(q => q.text);
+
+    if (questions.length === 0) { alert('Add at least one question'); return; }
+
+    const payload = {
+      title,
+      description: form.description.value.trim(),
+      is_anonymous: form.is_anonymous.checked,
+      end_date: form.end_date.value || null,
+      questions
+    };
+
+    try {
+      // If surveys.php is beside admin.php, change to 'surveys.php?action=create'
+      const res = await fetch('api/surveys.php?action=create', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+
+      // Read raw text first to surface PHP errors (HTML) if any
+      const raw = await res.text();
+      let data;
+      try { data = JSON.parse(raw); }
+      catch { throw new Error('Server did not return JSON. Response:\n' + raw.slice(0, 400)); }
+
+      if (!res.ok || data.success !== true) {
+        throw new Error(data.error || 'Request failed');
+      }
+
+      alert('Survey created! ID: ' + data.survey_id);
+      location.reload();
+    } catch (err) {
+      console.error(err);
+      alert('Failed to create survey: ' + err.message);
+    }
+  });
+})();
+</script>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 </body>

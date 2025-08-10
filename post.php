@@ -169,7 +169,6 @@ try {
         fp.title,
         fp.content,
         fp.post_type,
-        fp.status,
         fp.upvotes,
         fp.downvotes,
         fp.comment_count,

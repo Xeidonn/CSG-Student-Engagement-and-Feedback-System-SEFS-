@@ -215,94 +215,55 @@ function handleCreatePost($conn) {
   header('Location: index.php');
   exit;
 }
-
 function handleVote($conn) {
-  if (!isLoggedIn()) {
-      $_SESSION['error'] = 'Please login to vote';
-      return;
-  }
-  
-  $post_id = $_POST['post_id'] ?? 0;
-  $vote_type = $_POST['vote_type'] ?? '';
-  
-  if (!$post_id || !in_array($vote_type, ['upvote', 'downvote'])) {
-      $_SESSION['error'] = 'Invalid vote data';
-      return;
-  }
-  
-  try {
-      // Check if user already voted
-      $checkStmt = mysqli_prepare($conn, "SELECT vote_type FROM votes WHERE user_id = ? AND post_id = ?");
-      mysqli_stmt_bind_param($checkStmt, "ii", getCurrentUserId(), $post_id);
-      mysqli_stmt_execute($checkStmt);
-      $result = mysqli_stmt_get_result($checkStmt);
-      $existing_vote = mysqli_fetch_assoc($result);
-      
-      if ($existing_vote) {
-          if ($existing_vote['vote_type'] === $vote_type) {
-              // Remove vote if same type
-              $deleteStmt = mysqli_prepare($conn, "DELETE FROM votes WHERE user_id = ? AND post_id = ?");
-              mysqli_stmt_bind_param($deleteStmt, "ii", getCurrentUserId(), $post_id);
-              mysqli_stmt_execute($deleteStmt);
-          } else {
-              // Update vote if different type
-              $updateStmt = mysqli_prepare($conn, "UPDATE votes SET vote_type = ? WHERE user_id = ? AND post_id = ?");
-              mysqli_stmt_bind_param($updateStmt, "sii", $vote_type, getCurrentUserId(), $post_id);
-              mysqli_stmt_execute($updateStmt);
-          }
-      } else {
-          // Insert new vote
-          $insertStmt = mysqli_prepare($conn, "INSERT INTO votes (user_id, post_id, vote_type) VALUES (?, ?, ?)");
-          mysqli_stmt_bind_param($insertStmt, "iis", getCurrentUserId(), $post_id, $vote_type);
-          mysqli_stmt_execute($insertStmt);
-      }
-      
-      $_SESSION['success'] = 'Vote recorded!';
-  } catch (Exception $e) {
-      $_SESSION['error'] = 'Failed to vote: ' . $e->getMessage();
-  }
-  
-  header('Location: index.php?' . $_SERVER['QUERY_STRING']);
-  exit;
-}
+    if (!isLoggedIn()) {
+        $_SESSION['error'] = 'Please login to vote';
+        return;
+    }
 
-function handleAddComment($conn) {
-  if (!isLoggedIn()) {
-      $_SESSION['error'] = 'Please login to comment';
-      return;
-  }
-  
-  $post_id = $_POST['post_id'] ?? 0;
-  $content = $_POST['content'] ?? '';
-  $parent_comment_id = $_POST['parent_comment_id'] ?? null;
-  
-  if (!$post_id || empty($content)) {
-      $_SESSION['error'] = 'Post ID and content are required';
-      return;
-  }
-  
-  try {
-      $stmt = mysqli_prepare($conn, "INSERT INTO comments (post_id, user_id, parent_comment_id, content) VALUES (?, ?, ?, ?)");
-      mysqli_stmt_bind_param($stmt, "iiis", $post_id, getCurrentUserId(), $parent_comment_id, $content);
-      
-      if (mysqli_stmt_execute($stmt)) {
-          $comment_id = mysqli_insert_id($conn);
-          
-          // Log activity
-          $logStmt = mysqli_prepare($conn, "INSERT INTO activity_logs (user_id, action, table_name, record_id) VALUES (?, 'COMMENT_ADDED', 'comments', ?)");
-          mysqli_stmt_bind_param($logStmt, "ii", getCurrentUserId(), $comment_id);
-          mysqli_stmt_execute($logStmt);
-          
-          $_SESSION['success'] = 'Comment added successfully!';
-      } else {
-          $_SESSION['error'] = 'Failed to add comment';
-      }
-  } catch (Exception $e) {
-      $_SESSION['error'] = 'Failed to add comment: ' . $e->getMessage();
-  }
-  
-  header('Location: index.php?' . $_SERVER['QUERY_STRING']);
-  exit;
+    $post_id = $_POST['post_id'] ?? 0;
+    $vote_type = $_POST['vote_type'] ?? '';
+
+    if (!$post_id || !in_array($vote_type, ['upvote', 'downvote'])) {
+        $_SESSION['error'] = 'Invalid vote data';
+        return;
+    }
+
+    try {
+        // Check if user already voted
+        $checkStmt = mysqli_prepare($conn, "SELECT vote_type FROM votes WHERE user_id = ? AND post_id = ?");
+        mysqli_stmt_bind_param($checkStmt, "ii", $user_id, $post_id);
+        $user_id = getCurrentUserId(); // ensure variable for bind_param
+        mysqli_stmt_execute($checkStmt);
+        $result = mysqli_stmt_get_result($checkStmt);
+        $existing_vote = mysqli_fetch_assoc($result);
+
+        if ($existing_vote) {
+            if ($existing_vote['vote_type'] === $vote_type) {
+                // Remove vote if same type
+                $deleteStmt = mysqli_prepare($conn, "DELETE FROM votes WHERE user_id = ? AND post_id = ?");
+                mysqli_stmt_bind_param($deleteStmt, "ii", $user_id, $post_id);
+                mysqli_stmt_execute($deleteStmt);
+            } else {
+                // Update vote if different type
+                $updateStmt = mysqli_prepare($conn, "UPDATE votes SET vote_type = ? WHERE user_id = ? AND post_id = ?");
+                mysqli_stmt_bind_param($updateStmt, "sii", $vote_type, $user_id, $post_id);
+                mysqli_stmt_execute($updateStmt);
+            }
+        } else {
+            // Insert new vote
+            $insertStmt = mysqli_prepare($conn, "INSERT INTO votes (user_id, post_id, vote_type) VALUES (?, ?, ?)");
+            mysqli_stmt_bind_param($insertStmt, "iis", $user_id, $post_id, $vote_type);
+            mysqli_stmt_execute($insertStmt);
+        }
+
+        $_SESSION['success'] = 'Vote recorded!';
+    } catch (Exception $e) {
+        $_SESSION['error'] = 'Failed to vote: ' . $e->getMessage();
+    }
+
+    header('Location: index.php?' . $_SERVER['QUERY_STRING']);
+    exit;
 }
 
 function loadPosts($conn, $section, $search, $category_filter, $page, $posts_per_page) {
@@ -354,7 +315,7 @@ function loadPosts($conn, $section, $search, $category_filter, $page, $posts_per
   LEFT JOIN users u ON fp.user_id = u.user_id
   LEFT JOIN categories c ON fp.category_id = c.category_id
   $where_clause
-  ORDER BY (fp.upvotes * 2 + fp.comment_count) DESC,
+ ORDER BY (fp.upvotes * 2 + fp.comment_count) DESC,
          fp.created_at DESC
   LIMIT ? OFFSET ?";
   
@@ -419,8 +380,7 @@ function truncateText($text, $length = 200) {
   <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
   <link href="css/style.css" rel="stylesheet">
 </head>
-<body>
-  <!-- Navigation -->
+<body> 
   <nav class="navbar navbar-expand-lg navbar-dark bg-primary sticky-top">
       <div class="container">
           <a class="navbar-brand fw-bold" href="index.php"><i class="fas fa-comments me-2"></i>SEFS</a>
@@ -483,7 +443,6 @@ function truncateText($text, $length = 200) {
       </div>
   </nav>
 
-  <!-- Alert Messages -->
   <?php if (isset($_SESSION['success'])): ?>
   <div class="alert alert-success alert-dismissible fade show m-3" role="alert">
       <?= htmlspecialchars($_SESSION['success']) ?>
@@ -498,10 +457,8 @@ function truncateText($text, $length = 200) {
   </div>
   <?php unset($_SESSION['error']); endif; ?>
 
-  <!-- Main Content -->
   <div class="container mt-4">
       <?php if ($section === 'home' || $section === 'suggestions'): ?>
-      <!-- Search and Filters -->
       <div class="row mb-4">
           <div class="col-md-8">
               <form method="GET" class="d-flex">
@@ -528,7 +485,6 @@ function truncateText($text, $length = 200) {
           </div>
       </div>
 
-      <!-- Create Post Button -->
       <?php if (isLoggedIn()): ?>
       <div class="row mb-4">
           <div class="col-12">
@@ -538,8 +494,7 @@ function truncateText($text, $length = 200) {
           </div>
       </div>
       <?php endif; ?>
-
-      <!-- Posts -->
+ 
       <div class="row">
           <div class="col-12">
               <?php if ($section === 'suggestions'): ?>
@@ -623,7 +578,7 @@ function truncateText($text, $length = 200) {
               </div>
               <?php endforeach; ?>
 
-              <!-- Pagination -->
+ 
               <?php if (count($posts) === $posts_per_page): ?>
               <div class="text-center mt-4">
                   <a href="?section=<?= $section ?>&search=<?= urlencode($search) ?>&category=<?= $category_filter ?>&page=<?= $page + 1 ?>" 
@@ -637,7 +592,6 @@ function truncateText($text, $length = 200) {
       </div>
 
       <?php elseif ($section === 'surveys'): ?>
-      <!-- Surveys Section -->
       <div class="row">
           <div class="col-12">
               <h2><i class="fas fa-poll me-2"></i>Active Surveys</h2>
@@ -654,13 +608,9 @@ function truncateText($text, $length = 200) {
               <div class="survey-card">
                   <h4 class="survey-title"><?= htmlspecialchars($survey['title']) ?></h4>
                   <p class="survey-description"><?= htmlspecialchars($survey['description']) ?></p>
-                  <div class="survey-meta">
-                      <span><i class="fas fa-users me-1"></i><?= $survey['response_count'] ?> responses</span>
-                      <span><i class="fas fa-calendar me-1"></i>Created <?= timeAgo($survey['created_at']) ?></span>
-                  </div>
                   <div class="mt-3">
-                      <a href="survey.php?id=<?= $survey['survey_id'] ?>" class="btn btn-primary">
-                          Take Survey
+<a href="survey.php?id=<?= $survey['survey_id'] ?>" class="btn btn-primary">
+    Take Survey
                       </a>
                   </div>
               </div>
@@ -671,7 +621,6 @@ function truncateText($text, $length = 200) {
       <?php endif; ?>
   </div>
 
-  <!-- Login Modal -->
   <div class="modal fade" id="loginModal" tabindex="-1">
       <div class="modal-dialog">
           <div class="modal-content">
@@ -701,7 +650,6 @@ function truncateText($text, $length = 200) {
       </div>
   </div>
 
-  <!-- Register Modal -->
   <div class="modal fade" id="registerModal" tabindex="-1">
       <div class="modal-dialog">
           <div class="modal-content">
@@ -739,7 +687,6 @@ function truncateText($text, $length = 200) {
       </div>
   </div>
 
-  <!-- Create Post Modal -->
   <?php if (isLoggedIn()): ?>
   <div class="modal fade" id="createPostModal" tabindex="-1">
       <div class="modal-dialog modal-lg">
@@ -759,7 +706,6 @@ function truncateText($text, $length = 200) {
                           <label for="postCategory" class="form-label">
 Category</label>
                           <select class="form-select" name="category_id" id="postCategory">
-                              <option value="">Select a category</option>
                               <?php foreach ($categories as $category): ?>
                               <option value="<?= $category['category_id'] ?>">
                                   <?= htmlspecialchars($category['name']) ?>

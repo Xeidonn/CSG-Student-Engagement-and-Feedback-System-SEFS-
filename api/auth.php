@@ -1,199 +1,191 @@
 <?php
-// api/auth.php
-declare(strict_types=1);
+require_once 'config/database.php';
+session_start();
 
-if (session_status() === PHP_SESSION_NONE) {
-    session_start();
+if (!isAdmin()) {
+    header('Location: index.php'); 
+    exit;
 }
-
-require_once '../config/database.php';
-header('Content-Type: application/json');
 
 $database = new Database();
 $conn = $database->getConnection();
 
-$method = $_SERVER['REQUEST_METHOD'] ?? 'GET';
-$action = $_GET['action'] ?? '';
-
-switch ($method) {
-    case 'POST':
-        if ($action === 'login') {
-            handleLogin($conn);
-            exit;
-        } elseif ($action === 'register') {
-            handleRegister($conn);
-            exit;
-        } elseif ($action === 'logout') {
-            handleLogout();
-            exit;
-        }
-        http_response_code(400);
-        echo json_encode(['error' => 'Unsupported POST action']);
-        exit;
-
-    case 'GET':
-        if ($action === 'check') {
-            checkAuthStatus();
-            exit;
-        }
-        http_response_code(400);
-        echo json_encode(['error' => 'Unsupported GET action']);
-        exit;
-
-    default:
-        http_response_code(405);
-        echo json_encode(['error' => 'Method not allowed']);
-        exit;
+// Load analytics data
+try {
+    // Get total counts
+    $result = mysqli_query($conn, "SELECT COUNT(*) as count FROM feedback_posts");
+    $total_posts = mysqli_fetch_assoc($result)['count'];
+    
+    $result = mysqli_query($conn, "SELECT COUNT(*) as count FROM feedback_posts WHERE post_type = 'suggestion'");
+    $total_suggestions = mysqli_fetch_assoc($result)['count'];
+    
+    $result = mysqli_query($conn, "SELECT COUNT(*) as count FROM comments");
+    $total_comments = mysqli_fetch_assoc($result)['count'];
+    
+    $result = mysqli_query($conn, "SELECT COUNT(*) as count FROM surveys WHERE is_active = 1");
+    $active_surveys = mysqli_fetch_assoc($result)['count'];
+    
+    $result = mysqli_query($conn, "SELECT COUNT(*) as count FROM users WHERE role = 'student'");
+    $total_students = mysqli_fetch_assoc($result)['count'];
+    
+    // Posts by category
+    $result = mysqli_query($conn, "SELECT 
+        c.name as category_name,
+        c.color as category_color,
+        COUNT(fp.post_id) as post_count
+    FROM categories c
+    LEFT JOIN feedback_posts fp ON c.category_id = fp.category_id
+    GROUP BY c.category_id, c.name, c.color
+    ORDER BY post_count DESC");
+    $categories_data = mysqli_fetch_all($result, MYSQLI_ASSOC);
+    
+    // Recent activity
+    $result = mysqli_query($conn, "SELECT 
+        al.action,
+        al.created_at,
+        u.name as user_name
+    FROM activity_logs al
+    LEFT JOIN users u ON al.user_id = u.user_id
+    ORDER BY al.created_at DESC
+    LIMIT 10");
+    $recent_activity = mysqli_fetch_all($result, MYSQLI_ASSOC);
+    
+} catch (Exception $e) {
+    $error_message = "Error loading analytics: " . $e->getMessage();
 }
 
-/**
- * POST /api/auth.php?action=login
- * Body: { email, password, role? }
- */
-function handleLogin($conn): void {
-    $input = json_decode(file_get_contents('php://input'), true) ?? [];
-
-    if (empty($input['email']) || empty($input['password'])) {
-        http_response_code(400);
-        echo json_encode(['error' => 'Email and password are required']);
-        return;
-    }
-
-    $email    = trim($input['email']);
-    $password = (string)$input['password'];
-    $requestedRole = isset($input['role']) ? trim((string)$input['role']) : null; // "admin" | "student" | "csg_officer"
-
-    try {
-        // Stored proc returns the user row (password check is done in PHP via password_verify)
-        $stmt = executeQuery($conn, "CALL sp_authenticate_user(?, ?)", [$email, $password]);
-        $user = fetchAssoc($stmt);
-
-        if (!$user || !isset($user['password_hash']) || !password_verify($password, $user['password_hash'])) {
-            http_response_code(401);
-            echo json_encode(['error' => 'Invalid credentials']);
-            return;
-        }
-
-        // If the client explicitly chose "admin", enforce it here
-        if ($requestedRole === 'admin' && $user['role'] !== 'admin') {
-            http_response_code(403);
-            echo json_encode(['error' => 'This account is not authorized for admin access']);
-            return;
-        }
-
-        // Set session
-        $_SESSION['user_id']    = (int)$user['user_id'];
-        $_SESSION['student_id'] = $user['student_id'];
-        $_SESSION['name']       = $user['name'];
-        $_SESSION['email']      = $user['email'];
-        $_SESSION['role']       = $user['role'];
-
-        // Remember-me (optional)
-        if (!empty($input['remember'])) {
-            $token = bin2hex(random_bytes(32));
-            executeQuery($conn, "UPDATE users SET remember_token = ? WHERE user_id = ?", [$token, $user['user_id']]);
-
-            // 3 weeks
-            setcookie('remember_token', $token, time() + (3 * 7 * 24 * 60 * 60), '/');
-        }
-
-        echo json_encode([
-            'success' => true,
-            'user' => [
-                'id'    => (int)$user['user_id'],
-                'name'  => $user['name'],
-                'email' => $user['email'],
-                'role'  => $user['role'],
-            ]
-        ]);
-    } catch (Throwable $e) {
-        http_response_code(500);
-        echo json_encode(['error' => 'Login failed: ' . $e->getMessage()]);
-    }
+function getActivityText($action) {
+    $texts = [
+        'USER_REGISTERED' => 'registered',
+        'POST_CREATED' => 'created a post',
+        'COMMENT_ADDED' => 'added a comment',
+        'SURVEY_CREATED' => 'created a survey',
+        'POST_STATUS_CHANGED' => 'updated post status',
+    ];
+    return $texts[$action] ?? 'performed an action';
 }
 
-/**
- * POST /api/auth.php?action=register
- */
-function handleRegister($conn): void {
-    $input = json_decode(file_get_contents('php://input'), true) ?? [];
-
-    $required = ['student_id', 'name', 'email', 'password'];
-    foreach ($required as $field) {
-        if (empty($input[$field])) {
-            http_response_code(400);
-            echo json_encode(['error' => ucfirst($field) . ' is required']);
-            return;
-        }
-    }
-
-    if (!str_ends_with($input['email'], '@dlsu.edu.ph')) {
-        http_response_code(400);
-        echo json_encode(['error' => 'Please use your DLSU email address']);
-        return;
-    }
-
-    try {
-        $password_hash = password_hash((string)$input['password'], PASSWORD_DEFAULT);
-
-        $stmt = executeQuery($conn, "CALL sp_register_user(?, ?, ?, ?)", [
-            $input['student_id'],
-            $input['name'],
-            $input['email'],
-            $password_hash
-        ]);
-
-        $result = fetchAssoc($stmt);
-
-        echo json_encode([
-            'success' => true,
-            'message' => 'Registration successful',
-            'user_id' => isset($result['user_id']) ? (int)$result['user_id'] : null
-        ]);
-    } catch (Throwable $e) {
-        http_response_code(500);
-        if (strpos($e->getMessage(), 'Duplicate entry') !== false) {
-            echo json_encode(['error' => 'Email or Student ID already exists']);
-        } else {
-            echo json_encode(['error' => 'Registration failed: ' . $e->getMessage()]);
-        }
-    }
+function timeAgo($datetime) {
+    $time = time() - strtotime($datetime);
+    
+    if ($time < 60) return 'Just now';
+    if ($time < 3600) return floor($time/60) . 'm ago';
+    if ($time < 86400) return floor($time/3600) . 'h ago';
+    if ($time < 2592000) return floor($time/86400) . 'd ago';
+    
+    return date('M j, Y', strtotime($datetime));
 }
+?>
 
-/**
- * POST /api/auth.php?action=logout
- */
-function handleLogout(): void {
-    if (isset($_COOKIE['remember_token'])) {
-        setcookie('remember_token', '', time() - 3600, '/');
-    }
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Analytics Dashboard - SEFS</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="css/style.css" rel="stylesheet">
+</head>
+<body>
 
-    // Wipe session data safely
-    $_SESSION = [];
-    if (ini_get('session.use_cookies')) {
-        $params = session_get_cookie_params();
-        setcookie(session_name(), '', time() - 42000, $params['path'], $params['domain'], $params['secure'], $params['httponly']);
-    }
-    session_destroy();
+<div class="container mt-4">
+    <h2><i class="fas fa-chart-bar me-2"></i>Analytics Dashboard</h2>
+    <p class="text-muted">Overview of system activity and engagement metrics.</p>
+    
+    <!-- Stats Cards -->
+    <div class="row mb-4">
+        <div class="col-md-2">
+            <div class="stats-card">
+                <div class="stats-number text-primary"><?= $total_posts ?></div>
+                <div class="stats-label">Total Posts</div>
+            </div>
+        </div>
+        <div class="col-md-2">
+            <div class="stats-card">
+                <div class="stats-number text-success"><?= $total_suggestions ?></div>
+                <div class="stats-label">Suggestions</div>
+            </div>
+        </div>
+        <div class="col-md-2">
+            <div class="stats-card">
+                <div class="stats-number text-info"><?= $total_comments ?></div>
+                <div class="stats-label">Comments</div>
+            </div>
+        </div>
+        <div class="col-md-2">
+            <div class="stats-card">
+                <div class="stats-number text-warning"><?= $active_surveys ?></div>
+                <div class="stats-label">Surveys</div>
+            </div>
+        </div>
+        <div class="col-md-2">
+            <div class="stats-card">
+                <div class="stats-number text-secondary"><?= $total_students ?></div>
+                <div class="stats-label">Students</div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Charts and Data -->
+    <div class="row">
+        <!-- Posts by Category -->
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header"><h5>Posts by Category</h5></div>
+                <div class="card-body">
+                    <?php if (empty($categories_data)): ?>
+                        <p class="text-muted">No data available</p>
+                    <?php else: ?>
+                        <?php foreach ($categories_data as $category): ?>
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <div class="d-flex align-items-center">
+                                <span class="badge me-2" style="background-color: <?= $category['category_color'] ?>">
+                                    <?= htmlspecialchars($category['category_name']) ?>
+                                </span>
+                            </div>
+                            <span class="fw-bold"><?= $category['post_count'] ?></span>
+                        </div>
+                        <div class="progress mb-3" style="height: 8px;">
+                            <div class="progress-bar" 
+                                 style="width: <?= $total_posts > 0 ? ($category['post_count'] / $total_posts * 100) : 0 ?>%; background-color: <?= $category['category_color'] ?>">
+                            </div>
+                        </div>
+                        <?php endforeach; ?>
+                    <?php endif; ?>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Recent Activity -->
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header"><h5>Recent Activity</h5></div>
+                <div class="card-body">
+                    <?php if (empty($recent_activity)): ?>
+                        <p class="text-muted">No recent activity</p>
+                    <?php else: ?>
+                        <?php foreach ($recent_activity as $activity): ?>
+                        <div class="activity-item">
+                            <div class="activity-icon bg-light">
+                                <i class="fas fa-circle"></i>
+                            </div>
+                            <div class="activity-content">
+                                <div class="activity-title">
+                                    <?= htmlspecialchars($activity['user_name'] ?: 'System') ?> 
+                                    <?= getActivityText($activity['action']) ?>
+                                </div>
+                                <div class="activity-time"><?= timeAgo($activity['created_at']) ?></div>
+                            </div>
+                        </div>
+                        <?php endforeach; ?>
+                    <?php endif; ?>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
 
-    echo json_encode(['success' => true]);
-}
-
-/**
- * GET /api/auth.php?action=check
- */
-function checkAuthStatus(): void {
-    if (!empty($_SESSION['user_id'])) {
-        echo json_encode([
-            'authenticated' => true,
-            'user' => [
-                'id'    => (int)$_SESSION['user_id'],
-                'name'  => $_SESSION['name'],
-                'email' => $_SESSION['email'],
-                'role'  => $_SESSION['role'],
-            ]
-        ]);
-        return;
-    }
-    echo json_encode(['authenticated' => false]);
-}
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

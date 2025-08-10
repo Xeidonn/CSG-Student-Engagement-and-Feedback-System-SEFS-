@@ -2,7 +2,7 @@
 class Database {
     private $host = 'localhost';
     private $username = 'root';
-    private $password = '12345*';
+    private $password = 'sqlroot';
     private $db_name = 'sefs_db';
     private $conn;
 
